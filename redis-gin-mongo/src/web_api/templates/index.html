@@ -1,0 +1,24 @@
+{{template "header.html"}}
+<div style="background-color: #707bb2; margin: 15px; border-radius: 5px; padding: 15px; width: 300px">
+    <b>Find a Blog Post</b>
+    <form action="/get-doc">
+        <label for="title">Title</label><br>
+        <input type="text" id="title" name="title"><br>
+        <p><input type=submit value="Search">
+      </form>
+    </div>
+    <div style="background-color: #707bb2; margin: 15px; border-radius: 5px; padding: 15px; width: 300px">
+        <b>Create a Blog Post</b>
+        <form action="/insert-doc" method="post">
+            <label for="title">Title</label><br>
+            <input type="text" id="title" name="title" label="title"><br>
+            <label for="author">Author</label><br>
+            <input type="text" id="author" name="author" label="author"><br>
+            <textarea id="body" name="body"
+                rows="5" cols="33">It was a dark and stormy night...
+            </textarea>
+            <p><input type=submit value="Create">
+          </form>
+        </div>
+        <p>{{ .content }}</p>
+{{template "footer.html"}}

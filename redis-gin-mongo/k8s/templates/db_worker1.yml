@@ -1,0 +1,33 @@
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  annotations:
+    velocity.tech.v1/id: db-worker1
+    velocity.tech.v1/dependsOn: redis, mongo1
+  name: db-worker1
+  labels:
+    app: db-worker1
+spec:
+  selector:
+    matchLabels:
+      api: db-worker1
+  replicas: 3
+  template:
+    metadata:
+      labels:
+        app: db-worker1
+        api: db-worker1
+    spec:
+      containers:
+        - name: db-worker1
+          image: jdvincent/gin_redis_db_worker:latest
+          env:
+            - name: REDIS_HOST
+              value: {{ .Values.redis_host | toJson  }}
+            - name: REDIS_PORT
+              value: {{ .Values.redis_port | toJson  }}
+            - name: MONGO1_HOST
+              value: {{ .Values.mongo1_host | toJson  }}
+            - name: MONGO1_PORT
+              value: {{ .Values.mongo1_port | toJson  }}

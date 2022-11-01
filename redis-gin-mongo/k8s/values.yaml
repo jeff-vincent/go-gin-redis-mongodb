@@ -1,0 +1,14 @@
+service_host: service
+service_port: "8080"
+mongo1_port: "27017"
+mongo1_host: mongo1
+mongo2_host: mongo2
+mongo2_port: "27017"
+redis_host: redis
+redis_port: "6379"
+web_api_host: web_api
+web_api_port: "8081"
+ingress_host: null
+ingress_class_name: kong
+host: "127.0.0.1"
+protocol: "http"
