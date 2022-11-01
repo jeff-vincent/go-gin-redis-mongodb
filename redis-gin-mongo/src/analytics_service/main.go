@@ -3,7 +3,6 @@ package main
 import (
 	"context"
 	"fmt"
-	"log"
 	"net/http"
 	"os"
 	"time"
@@ -14,60 +13,68 @@ import (
 	"go.mongodb.org/mongo-driver/mongo/options"
 )
 
-var MONGO2_HOST = os.Getenv("MONGO2_HOST")
-var MONGO2_PORT = os.Getenv("MONGO2_PORT")
+const (
+	databaseName   = "blog"
+	collectionName = "views"
+)
 
-func getDoc(client mongo.Client, title string) bson.D {
-	coll := client.Database("blog").Collection("views")
+var (
+	MONGO2_HOST = os.Getenv("MONGO2_HOST")
+	MONGO2_PORT = os.Getenv("MONGO2_PORT")
+	MONGO2_URI  = fmt.Sprintf("mongodb://%s:%s", MONGO2_HOST, MONGO2_PORT)
+)
+
+func getAnalyticsDataByTitle(ctx *gin.Context, mongo2 mongo.Client, title string) bson.D {
+	coll := mongo2.Database(databaseName).Collection(collectionName)
 	var result bson.D
-	err := coll.FindOne(context.TODO(), bson.D{{"title", title}}).Decode(&result)
+	err := coll.FindOne(ctx, bson.D{{"title", title}}).Decode(&result)
 	if err != nil {
-		log.Fatal(err)
+		panic(err)
 	}
 	return result
 }
 
-func getAllDocs(client mongo.Client) []bson.M {
-	coll := client.Database("blog").Collection("views")
+func getAllBlogViews(ctx *gin.Context, mongo2 mongo.Client) []bson.M {
+	coll := mongo2.Database(databaseName).Collection(collectionName)
 	cursor, err := coll.Find(context.TODO(), bson.D{})
 	if err != nil {
-		log.Fatal(err)
+		panic(err)
 	}
 	var results []bson.M
-	if err = cursor.All(context.TODO(), &results); err != nil {
+	if err = cursor.All(ctx, &results); err != nil {
 		panic(err)
 	}
 	return results
 }
 
 func main() {
-	mongo_uri := fmt.Sprintf("mongodb://%s:%s", MONGO2_HOST, MONGO2_PORT)
-	client, err := mongo.NewClient(options.Client().ApplyURI(mongo_uri))
+	mongo2, err := mongo.NewClient(options.Client().ApplyURI(MONGO2_URI))
 	if err != nil {
-		log.Fatal(err)
+		panic(err)
 	}
-	ctx, _ := context.WithTimeout(context.Background(), 10*time.Second)
-	err = client.Connect(ctx)
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
+	err = mongo2.Connect(ctx)
 	if err != nil {
-		log.Fatal(err)
+		panic(err)
 	}
-	defer client.Disconnect(ctx)
-	r := gin.Default()
+	defer mongo2.Disconnect(ctx)
+	router := gin.Default()
 
-	r.GET("/get-doc", func(c *gin.Context) {
-		title := c.Query("title")
-		result := getDoc(*client, title)
+	router.GET("/get-analytics-data-by-title", func(ctx *gin.Context) {
+		title := ctx.Query("title")
+		result := getAnalyticsDataByTitle(ctx, *mongo2, title)
 
-		c.JSON(http.StatusOK, gin.H{
+		ctx.JSON(http.StatusOK, gin.H{
 			"Data": result,
 		})
 	})
 
-	r.GET("/get-all-docs", func(c *gin.Context) {
-		result := getAllDocs(*client)
-		c.JSON(http.StatusOK, gin.H{
+	router.GET("/get-all-blog-views", func(ctx *gin.Context) {
+		result := getAllBlogViews(ctx, *mongo2)
+		ctx.JSON(http.StatusOK, gin.H{
 			"Data": result,
 		})
 	})
-	r.Run()
+	router.Run()
 }

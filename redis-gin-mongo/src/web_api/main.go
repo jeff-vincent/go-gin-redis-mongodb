@@ -26,16 +26,19 @@ type Docs struct {
 	Data []bson.M `json:"data"`
 }
 
-var REDIS_HOST = os.Getenv("REDIS_HOST")
-var REDIS_PORT = os.Getenv("REDIS_PORT")
-var ANALYTICS_SERVICE_HOST = os.Getenv("ANALYTICS_SERVICE_HOST")
-var ANALYTICS_SERVICE_PORT = os.Getenv("ANALYTICS_SERVICE_PORT")
-var BLOG_SERVICE_HOST = os.Getenv("BLOG_SERVICE_HOST")
-var BLOG_SERVICE_PORT = os.Getenv("BLOG_SERVICE_PORT")
+var (
+	REDIS_HOST             = os.Getenv("REDIS_HOST")
+	REDIS_PORT             = os.Getenv("REDIS_PORT")
+	ANALYTICS_SERVICE_HOST = os.Getenv("ANALYTICS_SERVICE_HOST")
+	ANALYTICS_SERVICE_PORT = os.Getenv("ANALYTICS_SERVICE_PORT")
+	BLOG_SERVICE_HOST      = os.Getenv("BLOG_SERVICE_HOST")
+	BLOG_SERVICE_PORT      = os.Getenv("BLOG_SERVICE_PORT")
+	REDIS_URI              = fmt.Sprintf("redis://%s:%s/0", REDIS_HOST, REDIS_PORT)
+)
 
-func getDoc(c *gin.Context) {
+func getPost(c *gin.Context) {
 	title := c.Query("title")
-	address := fmt.Sprintf("http://%s:%s/get-doc?title=%s", BLOG_SERVICE_HOST, BLOG_SERVICE_PORT, title)
+	address := fmt.Sprintf("http://%s:%s/get-post?title=%s", BLOG_SERVICE_HOST, BLOG_SERVICE_PORT, title)
 	resp, _ := http.Get(address)
 	defer resp.Body.Close()
 	val := &Doc{}
@@ -43,13 +46,13 @@ func getDoc(c *gin.Context) {
 	err := decoder.Decode(val)
 
 	if err != nil {
-		fmt.Println(err)
+		panic(err)
 	}
 	c.JSON(http.StatusOK, val)
 }
 
-func getAllDocs(c *gin.Context) {
-	address := fmt.Sprintf("http://%s:%s/get-all-docs", BLOG_SERVICE_HOST, BLOG_SERVICE_PORT)
+func getAllPosts(c *gin.Context) {
+	address := fmt.Sprintf("http://%s:%s/get-all-posts", BLOG_SERVICE_HOST, BLOG_SERVICE_PORT)
 	resp, _ := http.Get(address)
 	defer resp.Body.Close()
 	val := &Docs{}
@@ -76,7 +79,7 @@ func newPost(c *gin.Context, t string, a string, b string) {
 
 func getPostViews(c *gin.Context) {
 	title := c.Query("title")
-	address := fmt.Sprintf("http://%s:%s/get-doc?title=%s", ANALYTICS_SERVICE_HOST, ANALYTICS_SERVICE_PORT, title)
+	address := fmt.Sprintf("http://%s:%s/get-analytics-data-by-title?title=%s", ANALYTICS_SERVICE_HOST, ANALYTICS_SERVICE_PORT, title)
 	resp, _ := http.Get(address)
 	defer resp.Body.Close()
 	val := &Doc{}
@@ -90,25 +93,22 @@ func getPostViews(c *gin.Context) {
 }
 
 func main() {
-	redis_uri := fmt.Sprintf("redis://%s:%s/0", REDIS_HOST, REDIS_PORT)
-	opt, err := redis.ParseURL(redis_uri)
+	opt, err := redis.ParseURL(REDIS_URI)
 	if err != nil {
 		panic(err)
 	}
 	rdb := redis.NewClient(opt)
-
-	r := gin.Default()
-	r.LoadHTMLGlob("templates/*.html")
-
-	r.GET("/", index)
-	r.POST("/insert-doc", func(c *gin.Context) {
+	router := gin.Default()
+	router.LoadHTMLGlob("templates/*.html")
+	router.GET("/", index)
+	router.POST("/post", func(c *gin.Context) {
 		title := c.PostForm("title")
 		author := c.PostForm("author")
 		body := c.PostForm("body")
 		new_post := BlogPost{Title: title, Author: author, Body: body}
 		payload, err := json.Marshal(new_post)
 		if err != nil {
-			fmt.Println(err)
+			panic(err)
 		}
 		ctx := context.Background()
 		err = rdb.Publish(ctx, "Upload", payload).Err()
@@ -117,8 +117,8 @@ func main() {
 		}
 		newPost(c, title, author, body)
 	})
-	r.GET("/get-doc", getDoc)
-	r.GET("/get-all-docs", getAllDocs)
-	r.GET("/get-post-views", getPostViews)
-	r.Run(":8081")
+	router.GET("/post", getPost)
+	router.GET("/posts", getAllPosts)
+	router.GET("/views", getPostViews)
+	router.Run(":8081")
 }

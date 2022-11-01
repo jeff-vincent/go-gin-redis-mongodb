@@ -3,7 +3,6 @@ package main
 import (
 	"context"
 	"fmt"
-	"log"
 	"net/http"
 	"os"
 	"time"
@@ -15,25 +14,33 @@ import (
 	"go.mongodb.org/mongo-driver/mongo/options"
 )
 
-var MONGO1_HOST = os.Getenv("MONGO1_HOST")
-var MONGO1_PORT = os.Getenv("MONGO1_PORT")
-var REDIS_HOST = os.Getenv("REDIS_HOST")
-var REDIS_PORT = os.Getenv("REDIS_PORT")
+var (
+	MONGO1_HOST = os.Getenv("MONGO1_HOST")
+	MONGO1_PORT = os.Getenv("MONGO1_PORT")
+	REDIS_HOST  = os.Getenv("REDIS_HOST")
+	REDIS_PORT  = os.Getenv("REDIS_PORT")
+	MONGO1_URI  = fmt.Sprintf("mongodb://%s:%s", MONGO1_HOST, MONGO1_PORT)
+	REDIS_URI   = fmt.Sprintf("redis://%s:%s/0", REDIS_HOST, REDIS_PORT)
+)
 
-func getDoc(client mongo.Client, title string) bson.D {
-	coll := client.Database("blog").Collection("posts")
+const (
+	databaseName   = "blog"
+	collectionName = "posts"
+)
+
+func getPost(ctx *gin.Context, mongo1 mongo.Client, title string) bson.D {
+	coll := mongo1.Database(databaseName).Collection(collectionName)
 	var result bson.D
 	err := coll.FindOne(context.TODO(), bson.D{{"title", title}}).Decode(&result)
 	if err != nil {
-		log.Fatal(err)
+		panic(err)
 	}
 	Publish(title)
 	return result
 }
 
 func Publish(payload string) {
-	redis_uri := fmt.Sprintf("redis://%s:%s/0", REDIS_HOST, REDIS_PORT)
-	opt, err := redis.ParseURL(redis_uri)
+	opt, err := redis.ParseURL(REDIS_URI)
 	if err != nil {
 		panic(err)
 	}
@@ -47,27 +54,25 @@ func Publish(payload string) {
 }
 
 func main() {
-	mongo_uri := fmt.Sprintf("mongodb://%s:%s", MONGO1_HOST, MONGO1_PORT)
-	client, err := mongo.NewClient(options.Client().ApplyURI(mongo_uri))
+	mongo1, err := mongo.NewClient(options.Client().ApplyURI(MONGO1_URI))
 	if err != nil {
-		log.Fatal(err)
+		panic(err)
 	}
-	ctx, _ := context.WithTimeout(context.Background(), 10*time.Second)
-	err = client.Connect(ctx)
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
+	err = mongo1.Connect(ctx)
 	if err != nil {
-		log.Fatal(err)
+		panic(err)
 	}
-	defer client.Disconnect(ctx)
-	r := gin.Default()
+	defer mongo1.Disconnect(ctx)
+	router := gin.Default()
+	router.GET("/get-post", func(ctx *gin.Context) {
+		title := ctx.Query("title")
+		result := getPost(ctx, *mongo1, title)
 
-	r.GET("/get-doc", func(c *gin.Context) {
-		title := c.Query("title")
-		result := getDoc(*client, title)
-
-		c.JSON(http.StatusOK, gin.H{
+		ctx.JSON(http.StatusOK, gin.H{
 			"Data": result,
 		})
 	})
-
-	r.Run(":8082")
+	router.Run(":8082")
 }
