@@ -6,8 +6,10 @@ import (
 	"fmt"
 	"log"
 	"os"
+	"os/signal"
+	"time"
 
-	"github.com/go-redis/redis/v8"
+	"github.com/thoas/bokchoy"
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
 )
@@ -47,27 +49,50 @@ func main() {
 	if err != nil {
 		log.Print(err)
 	}
-	ctx := context.Background()
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
 	err = mongo1.Connect(ctx)
 	if err != nil {
 		log.Print(err)
 	}
 	defer mongo1.Disconnect(ctx)
-	opt, err := redis.ParseURL(REDIS_URI)
+	engine, err := bokchoy.New(ctx, bokchoy.Config{
+		Broker: bokchoy.BrokerConfig{
+			Type: "redis",
+			Redis: bokchoy.RedisConfig{
+				Type: "client",
+				Client: bokchoy.RedisClientConfig{
+					Addr: "localhost:6379",
+				},
+			},
+		},
+	})
 	if err != nil {
-		log.Print(err)
+		log.Fatal(err)
 	}
-	rdb := redis.NewClient(opt)
-	pubsub := rdb.Subscribe(ctx, "Upload")
-	defer pubsub.Close()
-	ch := pubsub.Channel()
-	for msg := range ch {
+	engine.Queue("Upload").HandleFunc(func(r *bokchoy.Request) error {
+		fmt.Printf("%T", r.Task.Payload)
 		post := BlogPost{}
-		if err := json.Unmarshal([]byte(msg.Payload), &post); err != nil {
+		payload, _ := json.Marshal(r.Task.Payload)
+		err := json.Unmarshal(payload, &post)
+
+		if err != nil {
 			log.Print(err)
 		}
 		insertDoc(mongo1, post)
-		log.Print(post)
 
-	}
+		return nil
+	})
+	c := make(chan os.Signal, 1)
+	signal.Notify(c, os.Interrupt)
+
+	go func() {
+		for range c {
+			log.Print("Received signal, gracefully stopping")
+			engine.Stop(ctx)
+		}
+	}()
+
+	engine.Run(ctx)
+
 }

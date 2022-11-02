@@ -4,11 +4,13 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"log"
 	"net/http"
 	"os"
+	"time"
 
 	"github.com/gin-gonic/gin"
-	"github.com/go-redis/redis/v8"
+	"github.com/thoas/bokchoy"
 	"go.mongodb.org/mongo-driver/bson"
 )
 
@@ -36,8 +38,8 @@ var (
 	REDIS_URI              = fmt.Sprintf("redis://%s:%s/0", REDIS_HOST, REDIS_PORT)
 )
 
-func getPost(c *gin.Context) {
-	title := c.Query("title")
+func getPost(ctx *gin.Context) {
+	title := ctx.Query("title")
 	address := fmt.Sprintf("http://%s:%s/get-post?title=%s", BLOG_SERVICE_HOST, BLOG_SERVICE_PORT, title)
 	resp, _ := http.Get(address)
 	defer resp.Body.Close()
@@ -46,39 +48,38 @@ func getPost(c *gin.Context) {
 	err := decoder.Decode(val)
 
 	if err != nil {
-		panic(err)
+		log.Print(err)
 	}
-	c.JSON(http.StatusOK, val)
+	ctx.JSON(http.StatusOK, val)
 }
 
-func getAllPosts(c *gin.Context) {
+func getAllPosts(ctx *gin.Context) {
 	address := fmt.Sprintf("http://%s:%s/get-all-posts", BLOG_SERVICE_HOST, BLOG_SERVICE_PORT)
 	resp, _ := http.Get(address)
 	defer resp.Body.Close()
 	val := &Docs{}
-	fmt.Println(resp.Body)
 	decoder := json.NewDecoder(resp.Body)
 	err := decoder.Decode(val)
 	if err != nil {
-		fmt.Println(err)
+		log.Print(err)
 	}
-	c.JSON(http.StatusOK, val)
+	ctx.JSON(http.StatusOK, val)
 }
 
-func index(c *gin.Context) {
-	c.HTML(http.StatusOK, "index.html", gin.H{})
+func index(ctx *gin.Context) {
+	ctx.HTML(http.StatusOK, "index.html", gin.H{})
 }
 
-func newPost(c *gin.Context, t string, a string, b string) {
-	c.HTML(http.StatusOK, "post.html", gin.H{
+func newPost(ctx *gin.Context, t string, a string, b string) {
+	ctx.HTML(http.StatusOK, "post.html", gin.H{
 		"title":  t,
 		"author": a,
 		"body":   b,
 	})
 }
 
-func getPostViews(c *gin.Context) {
-	title := c.Query("title")
+func getPostViews(ctx *gin.Context) {
+	title := ctx.Query("title")
 	address := fmt.Sprintf("http://%s:%s/get-analytics-data-by-title?title=%s", ANALYTICS_SERVICE_HOST, ANALYTICS_SERVICE_PORT, title)
 	resp, _ := http.Get(address)
 	defer resp.Body.Close()
@@ -87,17 +88,43 @@ func getPostViews(c *gin.Context) {
 	err := decoder.Decode(val)
 
 	if err != nil {
-		fmt.Println(err)
+		log.Print(err)
 	}
-	c.JSON(http.StatusOK, val)
+	ctx.JSON(http.StatusOK, val)
+}
+
+func getAllViews(ctx *gin.Context) {
+	address := fmt.Sprintf("http://%s:%s/get-all-blog-views", ANALYTICS_SERVICE_HOST, ANALYTICS_SERVICE_PORT)
+	resp, _ := http.Get(address)
+	defer resp.Body.Close()
+	val := &Docs{}
+	decoder := json.NewDecoder(resp.Body)
+	err := decoder.Decode(val)
+
+	if err != nil {
+		log.Print(err)
+	}
+	ctx.JSON(http.StatusOK, val)
 }
 
 func main() {
-	opt, err := redis.ParseURL(REDIS_URI)
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
+	engine, err := bokchoy.New(ctx, bokchoy.Config{
+		Broker: bokchoy.BrokerConfig{
+			Type: "redis",
+			Redis: bokchoy.RedisConfig{
+				Type: "client",
+				Client: bokchoy.RedisClientConfig{
+					Addr: "localhost:6379",
+				},
+			},
+		},
+	})
 	if err != nil {
-		panic(err)
+		log.Print(err)
 	}
-	rdb := redis.NewClient(opt)
+
 	router := gin.Default()
 	router.LoadHTMLGlob("templates/*.html")
 	router.GET("/", index)
@@ -110,15 +137,22 @@ func main() {
 		if err != nil {
 			panic(err)
 		}
-		ctx := context.Background()
-		err = rdb.Publish(ctx, "Upload", payload).Err()
+		err = json.Unmarshal(payload, &new_post)
 		if err != nil {
-			panic(err)
+			log.Print(err)
 		}
+		ctx := context.Background()
+		task, err := engine.Queue("Upload").Publish(ctx, new_post)
+		if err != nil {
+			log.Print(err)
+		}
+		fmt.Println(task, "has been published")
+
 		newPost(c, title, author, body)
 	})
 	router.GET("/post", getPost)
 	router.GET("/posts", getAllPosts)
 	router.GET("/views", getPostViews)
+	router.GET("/all-views", getAllViews)
 	router.Run(":8081")
 }

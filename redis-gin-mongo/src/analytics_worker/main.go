@@ -5,9 +5,10 @@ import (
 	"fmt"
 	"log"
 	"os"
+	"os/signal"
 	"time"
 
-	"github.com/go-redis/redis/v8"
+	"github.com/thoas/bokchoy"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
@@ -32,7 +33,7 @@ type AnalyticsData struct {
 	Views int
 }
 
-func getDoc(title string, mongo2 *mongo.Client) AnalyticsData {
+func getDoc(mongo2 *mongo.Client, title string) AnalyticsData {
 	coll := mongo2.Database(databaseName).Collection(collectionName)
 	var result AnalyticsData
 	err := coll.FindOne(context.TODO(), bson.D{{"title", title}}).Decode(&result)
@@ -42,25 +43,25 @@ func getDoc(title string, mongo2 *mongo.Client) AnalyticsData {
 	return result
 }
 
-func insertDoc(title string, mongo2 *mongo.Client) *mongo.InsertOneResult {
+func insertDoc(mongo2 *mongo.Client, title string) *mongo.InsertOneResult {
 	coll := mongo2.Database(databaseName).Collection(collectionName)
 	data := AnalyticsData{Title: title, Views: 1}
-	res, err := coll.InsertOne(context.TODO(), data)
+	result, err := coll.InsertOne(context.TODO(), data)
 
 	if err != nil {
-		panic(err)
+		log.Print(err)
 	}
-	return res
+	return result
 }
 
-func updateAnalytics(title string, mongo2 *mongo.Client) {
-	existingDoc := getDoc(title, mongo2)
+func updateAnalytics(mongo2 *mongo.Client, title string) {
+	existingDoc := getDoc(mongo2, title)
 	if existingDoc.Title == "" {
-		insertDoc(title, mongo2)
+		insertDoc(mongo2, title)
 	} else {
 		views := existingDoc.Views + 1
 		coll := mongo2.Database("blog").Collection("views")
-		result, err := coll.UpdateOne(
+		_, err := coll.UpdateOne(
 			context.TODO(),
 			bson.M{"title": existingDoc.Title},
 			bson.D{
@@ -68,9 +69,8 @@ func updateAnalytics(title string, mongo2 *mongo.Client) {
 			},
 		)
 		if err != nil {
-			panic(err)
+			log.Print(err)
 		}
-		fmt.Println(result)
 	}
 }
 
@@ -86,16 +86,35 @@ func main() {
 		panic(err)
 	}
 	defer mongo2.Disconnect(ctx)
-	opt, err := redis.ParseURL(REDIS_URI)
+	engine, err := bokchoy.New(ctx, bokchoy.Config{
+		Broker: bokchoy.BrokerConfig{
+			Type: "redis",
+			Redis: bokchoy.RedisConfig{
+				Type: "client",
+				Client: bokchoy.RedisClientConfig{
+					Addr: "localhost:6379",
+				},
+			},
+		},
+	})
 	if err != nil {
-		panic(err)
+		log.Fatal(err)
 	}
-	rdb := redis.NewClient(opt)
-	pubsub := rdb.Subscribe(ctx, "Analytics")
-	defer pubsub.Close()
-	ch := pubsub.Channel()
-	for msg := range ch {
-		title := msg.Payload
-		updateAnalytics(title, mongo2)
-	}
+	engine.Queue("Analytics").HandleFunc(func(r *bokchoy.Request) error {
+		resultString := fmt.Sprintf("%v", r.Task.Payload)
+		updateAnalytics(mongo2, resultString)
+
+		return nil
+	})
+	c := make(chan os.Signal, 1)
+	signal.Notify(c, os.Interrupt)
+
+	go func() {
+		for range c {
+			log.Print("Received signal, gracefully stopping")
+			engine.Stop(ctx)
+		}
+	}()
+
+	engine.Run(ctx)
 }

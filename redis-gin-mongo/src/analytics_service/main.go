@@ -24,7 +24,7 @@ var (
 	MONGO2_URI  = fmt.Sprintf("mongodb://%s:%s", MONGO2_HOST, MONGO2_PORT)
 )
 
-func getAnalyticsDataByTitle(ctx *gin.Context, mongo2 mongo.Client, title string) bson.D {
+func getAnalyticsDataByTitle(ctx *gin.Context, mongo2 *mongo.Client, title string) bson.D {
 	coll := mongo2.Database(databaseName).Collection(collectionName)
 	var result bson.D
 	err := coll.FindOne(ctx, bson.D{{"title", title}}).Decode(&result)
@@ -34,7 +34,7 @@ func getAnalyticsDataByTitle(ctx *gin.Context, mongo2 mongo.Client, title string
 	return result
 }
 
-func getAllBlogViews(ctx *gin.Context, mongo2 mongo.Client) []bson.M {
+func getAllBlogViews(ctx *gin.Context, mongo2 *mongo.Client) []bson.M {
 	coll := mongo2.Database(databaseName).Collection(collectionName)
 	cursor, err := coll.Find(context.TODO(), bson.D{})
 	if err != nil {
@@ -63,7 +63,7 @@ func main() {
 
 	router.GET("/get-analytics-data-by-title", func(ctx *gin.Context) {
 		title := ctx.Query("title")
-		result := getAnalyticsDataByTitle(ctx, *mongo2, title)
+		result := getAnalyticsDataByTitle(ctx, mongo2, title)
 
 		ctx.JSON(http.StatusOK, gin.H{
 			"Data": result,
@@ -71,7 +71,7 @@ func main() {
 	})
 
 	router.GET("/get-all-blog-views", func(ctx *gin.Context) {
-		result := getAllBlogViews(ctx, *mongo2)
+		result := getAllBlogViews(ctx, mongo2)
 		ctx.JSON(http.StatusOK, gin.H{
 			"Data": result,
 		})

@@ -3,12 +3,13 @@ package main
 import (
 	"context"
 	"fmt"
+	"log"
 	"net/http"
 	"os"
 	"time"
 
 	"github.com/gin-gonic/gin"
-	"github.com/go-redis/redis/v8"
+	"github.com/thoas/bokchoy"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
@@ -28,7 +29,7 @@ const (
 	collectionName = "posts"
 )
 
-func getPost(ctx *gin.Context, mongo1 mongo.Client, title string) bson.D {
+func getPost(ctx *gin.Context, mongo1 *mongo.Client, title string) bson.D {
 	coll := mongo1.Database(databaseName).Collection(collectionName)
 	var result bson.D
 	err := coll.FindOne(context.TODO(), bson.D{{"title", title}}).Decode(&result)
@@ -40,16 +41,29 @@ func getPost(ctx *gin.Context, mongo1 mongo.Client, title string) bson.D {
 }
 
 func Publish(payload string) {
-	opt, err := redis.ParseURL(REDIS_URI)
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
+	engine, err := bokchoy.New(ctx, bokchoy.Config{
+		Broker: bokchoy.BrokerConfig{
+			Type: "redis",
+			Redis: bokchoy.RedisConfig{
+				Type: "client",
+				Client: bokchoy.RedisClientConfig{
+					Addr: "localhost:6379",
+				},
+			},
+		},
+	})
 	if err != nil {
-		panic(err)
+		log.Print(err)
 	}
-	rdb := redis.NewClient(opt)
-	ctx := context.Background()
-	err = rdb.Publish(ctx, "Analytics", payload).Err()
+
+	task, err := engine.Queue("Analytics").Publish(ctx, payload)
 	if err != nil {
-		panic(err)
+		log.Print(err)
 	}
+
+	fmt.Println(task, "has been published")
 
 }
 
@@ -66,10 +80,10 @@ func main() {
 	}
 	defer mongo1.Disconnect(ctx)
 	router := gin.Default()
+
 	router.GET("/get-post", func(ctx *gin.Context) {
 		title := ctx.Query("title")
-		result := getPost(ctx, *mongo1, title)
-
+		result := getPost(ctx, mongo1, title)
 		ctx.JSON(http.StatusOK, gin.H{
 			"Data": result,
 		})
