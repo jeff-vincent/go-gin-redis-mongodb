@@ -3,13 +3,12 @@ package main
 import (
 	"context"
 	"fmt"
-	"log"
 	"net/http"
 	"os"
 	"time"
 
 	"github.com/gin-gonic/gin"
-	"github.com/thoas/bokchoy"
+	"github.com/go-redis/redis/v8"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
@@ -43,27 +42,15 @@ func getPost(ctx *gin.Context, mongo1 *mongo.Client, title string) bson.D {
 func Publish(payload string) {
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
-	engine, err := bokchoy.New(ctx, bokchoy.Config{
-		Broker: bokchoy.BrokerConfig{
-			Type: "redis",
-			Redis: bokchoy.RedisConfig{
-				Type: "client",
-				Client: bokchoy.RedisClientConfig{
-					Addr: "localhost:6379",
-				},
-			},
-		},
-	})
+	// Rpush Blpop
+	opt, err := redis.ParseURL(REDIS_URI)
 	if err != nil {
-		log.Print(err)
+		panic(err)
 	}
-
-	task, err := engine.Queue("Analytics").Publish(ctx, payload)
-	if err != nil {
-		log.Print(err)
+	rdb := redis.NewClient(opt)
+	if err := rdb.RPush(ctx, "Analytics", payload).Err(); err != nil {
+		panic(err)
 	}
-
-	fmt.Println(task, "has been published")
 
 }
 

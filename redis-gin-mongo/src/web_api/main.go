@@ -7,10 +7,9 @@ import (
 	"log"
 	"net/http"
 	"os"
-	"time"
 
 	"github.com/gin-gonic/gin"
-	"github.com/thoas/bokchoy"
+	"github.com/go-redis/redis/v8"
 	"go.mongodb.org/mongo-driver/bson"
 )
 
@@ -108,22 +107,11 @@ func getAllViews(ctx *gin.Context) {
 }
 
 func main() {
-	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
-	defer cancel()
-	engine, err := bokchoy.New(ctx, bokchoy.Config{
-		Broker: bokchoy.BrokerConfig{
-			Type: "redis",
-			Redis: bokchoy.RedisConfig{
-				Type: "client",
-				Client: bokchoy.RedisClientConfig{
-					Addr: "localhost:6379",
-				},
-			},
-		},
-	})
+	opt, err := redis.ParseURL(REDIS_URI)
 	if err != nil {
-		log.Print(err)
+		panic(err)
 	}
+	rdb := redis.NewClient(opt)
 
 	router := gin.Default()
 	router.LoadHTMLGlob("templates/*.html")
@@ -142,11 +130,9 @@ func main() {
 			log.Print(err)
 		}
 		ctx := context.Background()
-		task, err := engine.Queue("Upload").Publish(ctx, new_post)
-		if err != nil {
-			log.Print(err)
+		if err := rdb.RPush(ctx, "Upload", payload).Err(); err != nil {
+			panic(err)
 		}
-		fmt.Println(task, "has been published")
 
 		newPost(c, title, author, body)
 	})

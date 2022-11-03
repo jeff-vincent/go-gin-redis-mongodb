@@ -5,10 +5,8 @@ import (
 	"fmt"
 	"log"
 	"os"
-	"os/signal"
-	"time"
 
-	"github.com/thoas/bokchoy"
+	"github.com/go-redis/redis/v8"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
@@ -75,8 +73,7 @@ func updateAnalytics(mongo2 *mongo.Client, title string) {
 }
 
 func main() {
-	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
-	defer cancel()
+	ctx := context.Background()
 	mongo2, err := mongo.NewClient(options.Client().ApplyURI(MONGO2_URI))
 	if err != nil {
 		panic(err)
@@ -86,35 +83,21 @@ func main() {
 		panic(err)
 	}
 	defer mongo2.Disconnect(ctx)
-	engine, err := bokchoy.New(ctx, bokchoy.Config{
-		Broker: bokchoy.BrokerConfig{
-			Type: "redis",
-			Redis: bokchoy.RedisConfig{
-				Type: "client",
-				Client: bokchoy.RedisClientConfig{
-					Addr: "localhost:6379",
-				},
-			},
-		},
-	})
+	// Rpush Blpop
+
+	opt, err := redis.ParseURL(REDIS_URI)
 	if err != nil {
-		log.Fatal(err)
+		panic(err)
 	}
-	engine.Queue("Analytics").HandleFunc(func(r *bokchoy.Request) error {
-		resultString := fmt.Sprintf("%v", r.Task.Payload)
-		updateAnalytics(mongo2, resultString)
-
-		return nil
-	})
-	c := make(chan os.Signal, 1)
-	signal.Notify(c, os.Interrupt)
-
-	go func() {
-		for range c {
-			log.Print("Received signal, gracefully stopping")
-			engine.Stop(ctx)
+	rdb := redis.NewClient(opt)
+	for {
+		// use `rdb.BLPop(0, "queue")` for infinite waiting time
+		result, err := rdb.BLPop(ctx, 0, "Analytics").Result()
+		if err != nil {
+			panic(err)
 		}
-	}()
+		updateAnalytics(mongo2, result[1])
+		fmt.Println(result[0], result[1])
+	}
 
-	engine.Run(ctx)
 }
