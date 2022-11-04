@@ -1,0 +1,77 @@
+webAPI:
+  annotations:
+    velocityID: null
+    velocityDependsOn: null
+
+  containers:
+    image: jdvincent/gin-redis-web-api:latest
+  
+  envVars:
+    REDIS_HOST: redis
+    REDIS_PORT: "6379"
+    ANALYTICS_SERVICE_HOST: analytics-ser
+    ANALYTICS_SERVICE_PORT: "8080"
+    BLOG_SERVICE_HOST: blog-service
+    BLOG_SERVICE_PORT: "8080"
+
+  ingress:
+    ingressClassName: kong
+    host: null
+  
+
+dbWorker:
+  annotations:
+    velocityID: null
+    velocityDependsOn: null
+
+  containers:
+    image: jdvincent/gin-redis-db-worker:latest
+  
+  envVars:
+    REDIS_HOST: redis
+    REDIS_PORT: "6379"
+    MONGO1_HOST: mongo1
+    MONGO1_PORT: "27017"
+
+
+blogService:
+  annotations:
+    velocityID: null
+    velocityDependsOn: null
+
+  containers:
+    image: jdvincent/gin-redis-blog-service:latest
+  
+  envVars:
+    REDIS_HOST: redis
+    REDIS_PORT: "6379"
+    MONGO1_HOST: mongo1
+    MONGO1_PORT: "27017"
+
+
+analyticsWorker:
+  annotations:
+    velocityID: null
+    velocityDependsOn: null
+
+  containers:
+    image: jdvincent/gin-redis-analytics-worker:latest
+  
+  envVars:
+    REDIS_HOST: redis
+    REDIS_PORT: "6379"
+    MONGO2_HOST: mongo2
+    MONGO2_PORT: "27017"
+
+
+analyticsService:
+  annotations:
+    velocityID: null
+    velocityDependsOn: null
+
+  containers:
+    image: jdvincent/gin-redis-analytics-service:latest
+  
+  envVars:
+    MONGO2_HOST: mongo2
+    MONGO2_PORT: "27017"

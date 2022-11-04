@@ -1,0 +1,40 @@
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  annotations:
+    velocity.tech.v1/id: redis
+  name: redis
+  labels:
+    app: redis
+spec:
+  selector:
+    matchLabels:
+      api: redis
+  replicas: 1
+  template:
+    metadata:
+      labels:
+        app: redis
+        api: redis
+    spec:
+      containers:
+        - name: redis
+          image: redis:latest
+          ports:
+            - name: redis
+              containerPort: 6379
+              protocol: TCP
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: redis
+spec:
+  ports:
+    - port: 6379
+      targetPort: 6379
+      name: redis
+  selector:
+    app: redis
+  type: ClusterIP

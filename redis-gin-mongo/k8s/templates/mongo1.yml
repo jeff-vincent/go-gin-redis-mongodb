@@ -1,0 +1,40 @@
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  annotations:
+    velocity.tech.v1/id: mongo1
+  name: mongo1
+  labels:
+    app: mongo1
+spec:
+  selector:
+    matchLabels:
+      api: mongo1
+  replicas: 1
+  template:
+    metadata:
+      labels:
+        app: mongo1
+        api: mongo1
+    spec:
+      containers:
+        - name: mongo1
+          image: mongo:5.0
+          ports:
+            - name: mongo1
+              containerPort: 27017
+              protocol: TCP
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: mongo1
+spec:
+  ports:
+    - port: 27017
+      targetPort: 27017
+      name: mongo1
+  selector:
+    app: mongo1
+  type: ClusterIP

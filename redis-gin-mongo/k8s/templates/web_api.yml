@@ -1,0 +1,72 @@
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  annotations:
+    # velocity.tech.v1/id: {{ .Values.webAPI.annotations.velocityID | quote }}
+    # velocity.tech.v1/dependsOn: {{ .Values.webAPI.annotations.velocityDependsOn | quote }}
+  name: web-api
+  labels:
+    app: web-api
+spec:
+  selector:
+    matchLabels:
+      api: web-api
+  replicas: 3
+  template:
+    metadata:
+      labels:
+        app: web-api
+        api: web-api
+    spec:
+      containers:
+        - name: web-api
+          image: {{ .Values.webAPI.containers.image | quote }}
+          env:
+            - name: REDIS_HOST
+              value: {{ .Values.webAPI.envVars.REDIS_HOST | quote  }}
+            - name: REDIS_PORT
+              value: {{ .Values.webAPI.envVars.REDIS_PORT | quote  }}
+            - name: ANALYTICS_SERVICE_HOST
+              value: {{ .Values.webAPI.envVars.ANALYTICS_SERVICE_HOST | quote  }}
+            - name: ANALYTICS_SERVICE_PORT
+              value: {{ .Values.webAPI.envVars.ANALYTICS_SERVICE_PORT | quote  }}
+            - name: BLOG_SERVICE_HOST
+              value: {{ .Values.webAPI.envVars.BLOG_SERVICE_HOST | quote  }}
+            - name: BLOG_SERVICE_PORT
+              value: {{ .Values.webAPI.envVars.BLOG_SERVICE_PORT | quote  }}
+          ports:
+            - name: web-api
+              containerPort: 8081
+              protocol: TCP
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: web-api
+spec:
+  ports:
+    - port: 8081
+      targetPort: 8081
+      name: web-api
+  selector:
+    app: web-api
+  type: ClusterIP
+---
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: web-api
+spec:
+  ingressClassName: {{ .Values.webAPI.ingress.ingressClassName | quote }}
+  rules:
+    - host: {{ .Values.webAPI.ingress.host | quote }}
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: web-api
+                port:
+                  number: 8081

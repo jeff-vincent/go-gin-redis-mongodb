@@ -1,0 +1,50 @@
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  annotations:
+    # velocity.tech.v1/id: {{ .Values.blogService.annotations.velocityID | quote }}
+    # velocity.tech.v1/dependsOn: {{ .Values.blogService.annotations.velocityDependsOn | quote }}
+  name: blog-service
+  labels:
+    app: blog-service
+spec:
+  selector:
+    matchLabels:
+      api: blog-service
+  replicas: 1
+  template:
+    metadata:
+      labels:
+        app: blog-service
+        api: blog-service
+    spec:
+      containers:
+        - name: blog-service
+          image: {{ .Values.blogService.containers.image | quote }}
+          env:
+            - name: MONGO1_HOST
+              value: {{ .Values.blogService.envVars.MONGO1_HOST | quote  }}
+            - name: MONGO1_PORT
+              value: {{ .Values.blogService.envVars.MONGO1_PORT | quote  }}
+            - name: REDIS_HOST
+              value: {{ .Values.blogService.envVars.REDIS_HOST | quote  }}
+            - name: REDIS_PORT
+              value: {{ .Values.blogService.envVars.REDIS_PORT | quote  }}
+          ports:
+            - name: blog-service
+              containerPort: 8080
+              protocol: TCP
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: blog-service
+spec:
+  ports:
+    - port: 8080
+      targetPort: 8080
+      name: blog-service
+  selector:
+    app: blog-service
+  type: ClusterIP

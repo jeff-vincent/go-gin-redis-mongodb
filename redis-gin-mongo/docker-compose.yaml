@@ -1,0 +1,65 @@
+---
+version: '3'
+
+services:
+  redis:
+    image: redis:latest
+    ports:
+      - 6379:6379
+  mongo1:
+    image: mongo:5.0
+    ports:
+      - 27017:27017
+  mongo2:
+    image: mongo:5.0
+    ports:
+      - 27018:27017
+  web_api:
+    restart: always
+    build: 
+      context: ./src/web_api
+      dockerfile: ./Dockerfile
+    ports:
+      - 80:8081
+    environment:
+      - REDIS_HOST=redis
+      - REDIS_PORT=6379
+      - SERVICE_HOST=service
+      - SERVICE_PORT=8080
+    command: ["./app"]
+  db_worker1:
+    restart: always
+    build: 
+      context: ./src/db_worker
+      dockerfile: ./Dockerfile
+    environment:
+      - MONGO1_HOST=mongo1
+      - MONGO1_PORT=27017
+      - REDIS_HOST=redis
+      - REDIS_PORT=6379
+    command: ["./app"]
+  db_worker2:
+    restart: always
+    build: 
+      context: ./src/db_worker2
+      dockerfile: ./Dockerfile
+    environment:
+      - MONGO1_HOST=mongo1
+      - MONGO1_PORT=27017
+      - MONGO2_HOST=mongo2
+      - MONGO2_PORT=27018
+      - REDIS_HOST=redis
+      - REDIS_PORT=6379
+    command: ["./app"]
+  service:
+    restart: always
+    build: 
+      context: ./src/service
+      dockerfile: ./Dockerfile
+    ports:
+      - 8080:8080
+    environment:
+      - MONGO2_HOST=mongo2
+      - MONGO2_PORT=27018
+    command: ["./app"]
+ 
