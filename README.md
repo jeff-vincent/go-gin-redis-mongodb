@@ -1,1 +1,0 @@
-# go-gin-redis-mongodb
