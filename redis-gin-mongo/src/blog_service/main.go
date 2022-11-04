@@ -75,5 +75,5 @@ func main() {
 			"Data": result,
 		})
 	})
-	router.Run(":8082")
+	router.Run()
 }

@@ -3,8 +3,8 @@ apiVersion: apps/v1
 kind: Deployment
 metadata:
   annotations:
-    velocity.tech.v1/id: web-api
-    velocity.tech.v1/dependsOn: redis, service
+    # velocity.tech.v1/id: {{ .Values.webAPI.annotations.velocityID | quote }}
+    # velocity.tech.v1/dependsOn: {{ .Values.webAPI.annotations.velocityDependsOn | quote }}
   name: web-api
   labels:
     app: web-api
@@ -21,20 +21,20 @@ spec:
     spec:
       containers:
         - name: web-api
-          image: jdvincent/gin_redis_web_api:latest
+          image: {{ .Values.webAPI.containers.image | quote }}
           env:
-            - name: PROTOCOL
-              value: {{ .Values.protocol | toJson  }}
-            - name: HOST
-              value: {{ .Values.host | toJson  }}
             - name: REDIS_HOST
-              value: {{ .Values.redis_host | toJson  }}
+              value: {{ .Values.webAPI.envVars.REDIS_HOST | quote  }}
             - name: REDIS_PORT
-              value: {{ .Values.redis_port | toJson  }}
-            - name: SERVICE_HOST
-              value: {{ .Values.service_host | toJson  }}
-            - name: SERVICE_PORT
-              value: {{ .Values.service_port | toJson  }}
+              value: {{ .Values.webAPI.envVars.REDIS_PORT | quote  }}
+            - name: ANALYTICS_SERVICE_HOST
+              value: {{ .Values.webAPI.envVars.ANALYTICS_SERVICE_HOST | quote  }}
+            - name: ANALYTICS_SERVICE_PORT
+              value: {{ .Values.webAPI.envVars.ANALYTICS_SERVICE_PORT | quote  }}
+            - name: BLOG_SERVICE_HOST
+              value: {{ .Values.webAPI.envVars.BLOG_SERVICE_HOST | quote  }}
+            - name: BLOG_SERVICE_PORT
+              value: {{ .Values.webAPI.envVars.BLOG_SERVICE_PORT | quote  }}
           ports:
             - name: web-api
               containerPort: 8081
@@ -58,9 +58,9 @@ kind: Ingress
 metadata:
   name: web-api
 spec:
-  ingressClassName: {{ .Values.ingress_class_name | toJson }}
+  ingressClassName: {{ .Values.webAPI.ingress.ingressClassName | quote }}
   rules:
-    - host: {{ .Values.ingress_host | toJson }}
+    - host: {{ .Values.webAPI.ingress.host | quote }}
       http:
         paths:
           - path: /

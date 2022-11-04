@@ -1,0 +1,33 @@
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  annotations:
+    # velocity.tech.v1/id: {{ .Values.dbWorker.annotations.velocityID | quote }}
+    # velocity.tech.v1/dependsOn: {{ .Values.dbWorker.annotations.velocityDependsOn | quote }}
+  name: db-worker
+  labels:
+    app: db-worker
+spec:
+  selector:
+    matchLabels:
+      api: db-worker
+  replicas: 3
+  template:
+    metadata:
+      labels:
+        app: db-worker
+        api: db-worker
+    spec:
+      containers:
+        - name: db-worker
+          image: {{ .Values.dbWorker.containers.image | quote }}
+          env:
+            - name: REDIS_HOST
+              value: {{ .Values.dbWorker.envVars.REDIS_HOST | quote  }}
+            - name: REDIS_PORT
+              value: {{ .Values.dbWorker.envVars.REDIS_PORT | quote  }}
+            - name: MONGO1_HOST
+              value: {{ .Values.dbWorker.envVars.MONGO1_HOST | quote  }}
+            - name: MONGO1_PORT
+              value: {{ .Values.dbWorker.envVars.MONGO1_PORT | quote  }}
