@@ -1,0 +1,370 @@
+---
+# Source: redis-gin-mongo/templates/analytics_service.yml
+apiVersion: v1
+kind: Service
+metadata:
+  name: analytics-ser
+spec:
+  ports:
+    - port: 8080
+      targetPort: 8080
+      name: analytics-ser
+  selector:
+    app: analytics-ser
+  type: ClusterIP
+---
+# Source: redis-gin-mongo/templates/blog_service.yml
+apiVersion: v1
+kind: Service
+metadata:
+  name: blog-service
+spec:
+  ports:
+    - port: 8080
+      targetPort: 8080
+      name: blog-service
+  selector:
+    app: blog-service
+  type: ClusterIP
+---
+# Source: redis-gin-mongo/templates/mongo1.yml
+apiVersion: v1
+kind: Service
+metadata:
+  name: mongo1
+spec:
+  ports:
+    - port: 27017
+      targetPort: 27017
+      name: mongo1
+  selector:
+    app: mongo1
+  type: ClusterIP
+---
+# Source: redis-gin-mongo/templates/mongo2.yml
+apiVersion: v1
+kind: Service
+metadata:
+  name: mongo2
+spec:
+  ports:
+    - port: 27017
+      targetPort: 27017
+      name: mongo2
+  selector:
+    app: mongo2
+  type: ClusterIP
+---
+# Source: redis-gin-mongo/templates/redis.yml
+apiVersion: v1
+kind: Service
+metadata:
+  name: redis
+spec:
+  ports:
+    - port: 6379
+      targetPort: 6379
+      name: redis
+  selector:
+    app: redis
+  type: ClusterIP
+---
+# Source: redis-gin-mongo/templates/web_api.yml
+apiVersion: v1
+kind: Service
+metadata:
+  name: web-api
+spec:
+  ports:
+    - port: 8081
+      targetPort: 8081
+      name: web-api
+  selector:
+    app: web-api
+  type: ClusterIP
+---
+# Source: redis-gin-mongo/templates/analytics_service.yml
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  annotations:
+    velocity.tech.v1/id: "analytics-ser"
+    velocity.tech.v1/dependsOn: "mongo2"
+  name: analytics-ser
+  labels:
+    app: analytics-ser
+spec:
+  selector:
+    matchLabels:
+      api: analytics-ser
+  replicas: 1
+  template:
+    metadata:
+      labels:
+        app: analytics-ser
+        api: analytics-ser
+    spec:
+      containers:
+        - name: analytics-ser
+          image: jdvincent/gin-redis-analytics-service:latest
+          env:
+            - name: MONGO2_HOST
+              value: "{velocity.v1:mongo2.exposures(port=mongo2).host}"
+            - name: MONGO2_PORT
+              value: "{velocity.v1:mongo2.exposures(port=mongo2).port}"
+
+          ports:
+            - name: analytics-ser
+              containerPort: 8080
+              protocol: TCP
+---
+# Source: redis-gin-mongo/templates/analytics_worker.yml
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  annotations:
+    velocity.tech.v1/id: "analytics-worker"
+    velocity.tech.v1/dependsOn: "redis, mongo2"
+  name: analytics-worker
+  labels:
+    app: analytics-worker
+spec:
+  selector:
+    matchLabels:
+      api: analytics-worker
+  replicas: 3
+  template:
+    metadata:
+      labels:
+        app: analytics-worker
+        api: analytics-worker
+    spec:
+      containers:
+        - name: analytics-worker
+          image: "jdvincent/gin-redis-analytics-worker:latest"
+          env:
+            - name: MONGO2_HOST
+              value: "{velocity.v1:mongo2.exposures(port=mongo2).host}"
+            - name: MONGO2_PORT
+              value: "{velocity.v1:mongo2.exposures(port=mongo2).port}"
+            - name: REDIS_HOST
+              value: "{velocity.v1:redis.exposures(port=redis).host}"
+            - name: REDIS_PORT
+              value: "{velocity.v1:redis.exposures(port=redis).port}"
+---
+# Source: redis-gin-mongo/templates/blog_service.yml
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  annotations:
+    velocity.tech.v1/id: "blog-service"
+    velocity.tech.v1/dependsOn: "redis, mongo1"
+  name: blog-service
+  labels:
+    app: blog-service
+spec:
+  selector:
+    matchLabels:
+      api: blog-service
+  replicas: 1
+  template:
+    metadata:
+      labels:
+        app: blog-service
+        api: blog-service
+    spec:
+      containers:
+        - name: blog-service
+          image: "jdvincent/gin-redis-blog-service:latest"
+          env:
+            - name: MONGO1_HOST
+              value: "{velocity.v1:mongo1.exposures(port=mongo1).host}"
+            - name: MONGO1_PORT
+              value: "{velocity.v1:mongo1.exposures(port=mongo1).port}"
+            - name: REDIS_HOST
+              value: "{velocity.v1:redis.exposures(port=redis).host}"
+            - name: REDIS_PORT
+              value: "{velocity.v1:redis.exposures(port=redis).port}"
+          ports:
+            - name: blog-service
+              containerPort: 8080
+              protocol: TCP
+---
+# Source: redis-gin-mongo/templates/db_worker.yml
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  annotations:
+    velocity.tech.v1/id: "db-worker"
+    velocity.tech.v1/dependsOn: "redis, mongo1"
+  name: db-worker
+  labels:
+    app: db-worker
+spec:
+  selector:
+    matchLabels:
+      api: db-worker
+  replicas: 3
+  template:
+    metadata:
+      labels:
+        app: db-worker
+        api: db-worker
+    spec:
+      containers:
+        - name: db-worker
+          image: "jdvincent/gin-redis-db-worker:latest"
+          env:
+            - name: REDIS_HOST
+              value: "{velocity.v1:redis.exposures(port=redis).host}"
+            - name: REDIS_PORT
+              value: "{velocity.v1:redis.exposures(port=redis).port}"
+            - name: MONGO1_HOST
+              value: "{velocity.v1:mongo1.exposures(port=mongo1).host}"
+            - name: MONGO1_PORT
+              value: "{velocity.v1:mongo1.exposures(port=mongo1).port}"
+---
+# Source: redis-gin-mongo/templates/mongo1.yml
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  annotations:
+    velocity.tech.v1/id: mongo1
+  name: mongo1
+  labels:
+    app: mongo1
+spec:
+  selector:
+    matchLabels:
+      api: mongo1
+  replicas: 1
+  template:
+    metadata:
+      labels:
+        app: mongo1
+        api: mongo1
+    spec:
+      containers:
+        - name: mongo1
+          image: mongo:5.0
+          ports:
+            - name: mongo1
+              containerPort: 27017
+              protocol: TCP
+---
+# Source: redis-gin-mongo/templates/mongo2.yml
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  annotations:
+    velocity.tech.v1/id: mongo2
+  name: mongo2
+  labels:
+    app: mongo2
+spec:
+  selector:
+    matchLabels:
+      api: mongo2
+  replicas: 1
+  template:
+    metadata:
+      labels:
+        app: mongo2
+        api: mongo2
+    spec:
+      containers:
+        - name: mongo2
+          image: mongo:5.0
+          ports:
+            - name: mongo2
+              containerPort: 27017
+              protocol: TCP
+---
+# Source: redis-gin-mongo/templates/redis.yml
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  annotations:
+    velocity.tech.v1/id: redis
+  name: redis
+  labels:
+    app: redis
+spec:
+  selector:
+    matchLabels:
+      api: redis
+  replicas: 1
+  template:
+    metadata:
+      labels:
+        app: redis
+        api: redis
+    spec:
+      containers:
+        - name: redis
+          image: redis:latest
+          ports:
+            - name: redis
+              containerPort: 6379
+              protocol: TCP
+---
+# Source: redis-gin-mongo/templates/web_api.yml
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  annotations:
+    velocity.tech.v1/id: "web-api"
+    velocity.tech.v1/dependsOn: "redis, analytics-ser, blog-service"
+  name: web-api
+  labels:
+    app: web-api
+spec:
+  selector:
+    matchLabels:
+      api: web-api
+  replicas: 3
+  template:
+    metadata:
+      labels:
+        app: web-api
+        api: web-api
+    spec:
+      containers:
+        - name: web-api
+          image: "jdvincent/gin-redis-web-api:latest"
+          env:
+            - name: REDIS_HOST
+              value: "{velocity.v1:redis.exposures(port=redis).host}"
+            - name: REDIS_PORT
+              value: "{velocity.v1:redis.exposures(port=redis).port}"
+            - name: ANALYTICS_SERVICE_HOST
+              value: "analytics-ser"
+            - name: ANALYTICS_SERVICE_PORT
+              value: "8080"
+            - name: BLOG_SERVICE_HOST
+              value: "blog-service"
+            - name: BLOG_SERVICE_PORT
+              value: "8080"
+          ports:
+            - name: web-api
+              containerPort: 8081
+              protocol: TCP
+---
+# Source: redis-gin-mongo/templates/web_api.yml
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: web-api
+spec:
+  ingressClassName: 
+  rules:
+    - host: "api-{velocity.v1.domainSuffix}"
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: web-api
+                port:
+                  number: 8081

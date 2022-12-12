@@ -4,10 +4,10 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"log"
 	"os"
 
 	"github.com/go-redis/redis/v8"
+	"github.com/rs/zerolog/log"
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
 )
@@ -24,52 +24,54 @@ const (
 )
 
 var (
-	MONGO1_HOST = os.Getenv("MONGO1_HOST")
-	MONGO1_PORT = os.Getenv("MONGO1_PORT")
-	REDIS_HOST  = os.Getenv("REDIS_HOST")
-	REDIS_PORT  = os.Getenv("REDIS_PORT")
-	MONGO1_URI  = fmt.Sprintf("mongodb://%s:%s", MONGO1_HOST, MONGO1_PORT)
-	REDIS_URI   = fmt.Sprintf("redis://%s:%s/0", REDIS_HOST, REDIS_PORT)
+	mongo_host = os.Getenv("MONGO1_HOST")
+	mongo_port = os.Getenv("MONGO1_PORT")
+	redis_host = os.Getenv("REDIS_HOST")
+	redis_port = os.Getenv("REDIS_PORT")
+	mongo_uri  = fmt.Sprintf("mongodb://%s:%s", mongo_host, mongo_port)
+	redis_uri  = fmt.Sprintf("redis://%s:%s/0", redis_host, redis_port)
 )
 
-func insertDoc(mongo1 *mongo.Client, post BlogPost) *mongo.InsertOneResult {
-	coll := mongo1.Database(databaseName).Collection(collectionName)
-	res, err := coll.InsertOne(context.TODO(), post)
+func insertDoc(mongoClient *mongo.Client, post BlogPost) (*mongo.InsertOneResult, error) {
+	coll := mongoClient.Database(databaseName).Collection(collectionName)
+	result, err := coll.InsertOne(context.TODO(), post)
 
 	if err != nil {
-		log.Print(err)
+		log.Error().Err(err).Msg("error occured while connecting to redis")
+		return nil, err
 	}
-	return res
+	return result, err
 }
 
 func main() {
-	mongo1, err := mongo.NewClient(options.Client().ApplyURI(MONGO1_URI))
+	mongoClient, err := mongo.NewClient(options.Client().ApplyURI(mongo_uri))
 	if err != nil {
-		log.Print(err)
+		log.Error().Err(err).Msg("error occured while connecting to mongo")
 	}
 	ctx := context.Background()
-	err = mongo1.Connect(ctx)
+	err = mongoClient.Connect(ctx)
 	if err != nil {
-		log.Print(err)
+		log.Error().Err(err).Msg("error occured while connecting to mongo")
 	}
-	defer mongo1.Disconnect(ctx)
-	opt, err := redis.ParseURL(REDIS_URI)
+	defer mongoClient.Disconnect(ctx)
+	opt, err := redis.ParseURL(redis_uri)
 	if err != nil {
-		panic(err)
+		log.Error().Err(err).Msg("error occured while connecting to redis")
 	}
 	rdb := redis.NewClient(opt)
 	for {
-		result, err := rdb.BLPop(ctx, 0, "Upload").Result()
+		result, err := rdb.BLPop(ctx, 0, "queue:new-post").Result()
 		if err != nil {
-			panic(err)
+			log.Error().Err(err).Msg("error occured while reading from redis")
+			continue
 		}
 
 		post := BlogPost{}
 		err = json.Unmarshal([]byte(result[1]), &post)
 		if err != nil {
-			log.Print(err)
+			log.Error().Err(err).Msg("error occured while decoding response into Post object")
 		}
-		insertDoc(mongo1, post)
+		insertDoc(mongoClient, post)
 		fmt.Println(result)
 
 	}

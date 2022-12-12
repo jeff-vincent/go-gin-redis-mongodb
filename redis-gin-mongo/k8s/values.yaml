@@ -1,7 +1,7 @@
 webAPI:
   annotations:
-    velocityID: null
-    velocityDependsOn: null
+    velocityID: ""
+    velocityDependsOn: ""
 
   containers:
     image: jdvincent/gin-redis-web-api:latest
@@ -21,8 +21,8 @@ webAPI:
 
 dbWorker:
   annotations:
-    velocityID: null
-    velocityDependsOn: null
+    velocityID: ""
+    velocityDependsOn: ""
 
   containers:
     image: jdvincent/gin-redis-db-worker:latest
@@ -36,8 +36,8 @@ dbWorker:
 
 blogService:
   annotations:
-    velocityID: null
-    velocityDependsOn: null
+    velocityID: ""
+    velocityDependsOn: ""
 
   containers:
     image: jdvincent/gin-redis-blog-service:latest
@@ -51,8 +51,8 @@ blogService:
 
 analyticsWorker:
   annotations:
-    velocityID: null
-    velocityDependsOn: null
+    velocityID: ""
+    velocityDependsOn: ""
 
   containers:
     image: jdvincent/gin-redis-analytics-worker:latest
@@ -66,8 +66,8 @@ analyticsWorker:
 
 analyticsService:
   annotations:
-    velocityID: null
-    velocityDependsOn: null
+    velocityID: ""
+    velocityDependsOn: ""
 
   containers:
     image: jdvincent/gin-redis-analytics-service:latest

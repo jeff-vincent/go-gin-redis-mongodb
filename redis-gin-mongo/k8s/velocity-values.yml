@@ -1,14 +1,77 @@
-mongo1_port: "{velocity.v1:mongo1.exposures(port=mongo1).port}"
-mongo1_host: "{velocity.v1:mongo1.exposures(port=mongo1).host}"
-mongo2_port: "{velocity.v1:mongo2.exposures(port=mongo2).port}"
-mongo2_host: "{velocity.v1:mongo2.exposures(port=mongo2).host}"
-redis_port: "{velocity.v1:redis.exposures(port=redis).port}"
-redis_host: "{velocity.v1:redis.exposures(port=redis).host}"
-service_port: "{velocity.v1:service.exposures(port=service).port}"
-service_host: "{velocity.v1:service.exposures(port=service).host}"
-web_api_host: "{velocity.v1:web-api.exposures(port=web-api).host}"
-web_api_port: "{velocity.v1:web-api.exposures(port=web-api).port}"
-ingress_host: "api-{velocity.v1.domainSuffix}"
-ingress_class_name: null
-protocol: "https"
-host: "api-{velocity.v1.domainSuffix}"
+webAPI:
+  annotations:
+    velocityID: "web-api"
+    velocityDependsOn: "redis, analytics-ser, blog-service"
+
+  containers:
+    image: jdvincent/gin-redis-web-api:latest
+  
+  envVars:
+    REDIS_HOST: "{velocity.v1:redis.exposures(port=redis).host}"
+    REDIS_PORT: "{velocity.v1:redis.exposures(port=redis).port}"
+    ANALYTICS_SERVICE_HOST: analytics-ser
+    ANALYTICS_SERVICE_PORT: "8080"
+    BLOG_SERVICE_HOST: blog-service
+    BLOG_SERVICE_PORT: "8080"
+
+  ingress:
+    ingressClassName: null
+    host: "api-{velocity.v1.domainSuffix}"
+  
+
+dbWorker:
+  annotations:
+    velocityID: "db-worker"
+    velocityDependsOn: "redis, mongo1"
+
+  containers:
+    image: jdvincent/gin-redis-db-worker:latest
+  
+  envVars:
+    REDIS_HOST: "{velocity.v1:redis.exposures(port=redis).host}"
+    REDIS_PORT: "{velocity.v1:redis.exposures(port=redis).port}"
+    MONGO1_HOST: "{velocity.v1:mongo1.exposures(port=mongo1).host}"
+    MONGO1_PORT: "{velocity.v1:mongo1.exposures(port=mongo1).port}"
+
+
+blogService:
+  annotations:
+    velocityID: "blog-service"
+    velocityDependsOn: "redis, mongo1"
+
+  containers:
+    image: jdvincent/gin-redis-blog-service:latest
+  
+  envVars:
+    REDIS_HOST: "{velocity.v1:redis.exposures(port=redis).host}"
+    REDIS_PORT: "{velocity.v1:redis.exposures(port=redis).port}"
+    MONGO1_HOST: "{velocity.v1:mongo1.exposures(port=mongo1).host}"
+    MONGO1_PORT: "{velocity.v1:mongo1.exposures(port=mongo1).port}"
+
+
+analyticsWorker:
+  annotations:
+    velocityID: "analytics-worker"
+    velocityDependsOn: "redis, mongo2"
+
+  containers:
+    image: jdvincent/gin-redis-analytics-worker:latest
+  
+  envVars:
+    REDIS_HOST: "{velocity.v1:redis.exposures(port=redis).host}"
+    REDIS_PORT: "{velocity.v1:redis.exposures(port=redis).port}"
+    MONGO2_HOST: "{velocity.v1:mongo2.exposures(port=mongo2).host}"
+    MONGO2_PORT: "{velocity.v1:mongo2.exposures(port=mongo2).port}"
+
+
+analyticsService:
+  annotations:
+    velocityID: "analytics-ser"
+    velocityDependsOn: "mongo2"
+
+  containers:
+    image: jdvincent/gin-redis-analytics-service:latest
+  
+  envVars:
+    MONGO2_HOST: "{velocity.v1:mongo2.exposures(port=mongo2).host}"
+    MONGO2_PORT: "{velocity.v1:mongo2.exposures(port=mongo2).port}"
