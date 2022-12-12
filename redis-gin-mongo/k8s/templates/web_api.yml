@@ -37,7 +37,7 @@ spec:
               value: {{ .Values.webAPI.envVars.BLOG_SERVICE_PORT | quote  }}
           ports:
             - name: web-api
-              containerPort: 8081
+              containerPort: 8080
               protocol: TCP
 ---
 apiVersion: v1
@@ -46,8 +46,8 @@ metadata:
   name: web-api
 spec:
   ports:
-    - port: 8081
-      targetPort: 8081
+    - port: 8080
+      targetPort: 8080
       name: web-api
   selector:
     app: web-api
@@ -69,4 +69,4 @@ spec:
               service:
                 name: web-api
                 port:
-                  number: 8081
+                  number: 8080

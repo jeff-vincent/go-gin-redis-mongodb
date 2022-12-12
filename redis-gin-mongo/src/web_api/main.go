@@ -41,16 +41,16 @@ func getPost(ctx *gin.Context) {
 	address := fmt.Sprintf("http://%s:%s/posts/%s", blog_service_host, blog_service_port, title)
 	resp, err := http.Get(address)
 	if err != nil {
-		log.Error().Err(err).Msg("error occured while fetching posts from posts service")                                 // this log will get stored internally
-		ctx.JSON(http.StatusInternalServerError, gin.H{"error": "user friendly error - without exposing internal logic"}) // you have the granullarity for choosing your own status code (instead of panicing)
+		log.Error().Err(err).Msg("error occured while fetching posts from posts service")
+		ctx.JSON(http.StatusInternalServerError, gin.H{"error": "Get posts failed"})
 	}
 	defer resp.Body.Close()
 	val := &Doc{}
-	decoder := json.NewDecoder(resp.Body) // I will usually also check the status code of the response before hand (like for 404 error for example)
+	decoder := json.NewDecoder(resp.Body)
 	err = decoder.Decode(val)
 	if err != nil {
-		log.Error().Err(err).Msg("error occured while decoding response into Doc object") // this log will get stored internally - usually you also log additional data like resp.Body etc..
-		ctx.JSON(http.StatusUnprocessableEntity, gin.H{"error": "user friendly error - without exposing internal logic"})
+		log.Error().Err(err).Msg("error occured while decoding response into Doc object")
+		ctx.JSON(http.StatusUnprocessableEntity, gin.H{"error": "Get posts failed"})
 	}
 	ctx.JSON(http.StatusOK, val)
 }
@@ -59,16 +59,16 @@ func getAllPosts(ctx *gin.Context) {
 	address := fmt.Sprintf("http://%s:%s/posts", blog_service_host, blog_service_port)
 	resp, err := http.Get(address)
 	if err != nil {
-		log.Error().Err(err).Msg("error occured while fetching posts from posts service")                                 // this log will get stored internally
-		ctx.JSON(http.StatusInternalServerError, gin.H{"error": "user friendly error - without exposing internal logic"}) // you have the granullarity for choosing your own status code (instead of panicing)
+		log.Error().Err(err).Msg("error occured while fetching posts from posts service")
+		ctx.JSON(http.StatusInternalServerError, gin.H{"error": "Get posts failed"})
 	}
 	defer resp.Body.Close()
 	val := &Docs{}
 	decoder := json.NewDecoder(resp.Body)
 	err = decoder.Decode(val)
 	if err != nil {
-		log.Error().Err(err).Msg("error occured while decoding response into Doc object") // this log will get stored internally - usually you also log additional data like resp.Body etc..
-		ctx.JSON(http.StatusUnprocessableEntity, gin.H{"error": "user friendly error - without exposing internal logic"})
+		log.Error().Err(err).Msg("error occured while decoding response into Doc object")
+		ctx.JSON(http.StatusUnprocessableEntity, gin.H{"error": "Get posts failed"})
 	}
 	ctx.JSON(http.StatusOK, val)
 }
@@ -90,16 +90,16 @@ func getPostViews(ctx *gin.Context) {
 	address := fmt.Sprintf("http://%s:%s/views/%s", analytics_service_host, analytics_service_port, title)
 	resp, err := http.Get(address)
 	if err != nil {
-		log.Error().Err(err).Msg("error occured while fetching views from views service")                                 // this log will get stored internally
-		ctx.JSON(http.StatusInternalServerError, gin.H{"error": "user friendly error - without exposing internal logic"}) // you have the granullarity for choosing your own status code (instead of panicing)
+		log.Error().Err(err).Msg("error occured while fetching views from views service")
+		ctx.JSON(http.StatusInternalServerError, gin.H{"error": "Get views failed"})
 	}
 	defer resp.Body.Close()
 	val := &Doc{}
 	decoder := json.NewDecoder(resp.Body)
 	err = decoder.Decode(val)
 	if err != nil {
-		log.Error().Err(err).Msg("error occured while decoding response into Doc object") // this log will get stored internally - usually you also log additional data like resp.Body etc..
-		ctx.JSON(http.StatusUnprocessableEntity, gin.H{"error": "user friendly error - without exposing internal logic"})
+		log.Error().Err(err).Msg("error occured while decoding response into Doc object")
+		ctx.JSON(http.StatusUnprocessableEntity, gin.H{"error": "Get views failed"})
 	}
 	ctx.JSON(http.StatusOK, val)
 }
@@ -108,16 +108,16 @@ func getAllViews(ctx *gin.Context) {
 	address := fmt.Sprintf("http://%s:%s/views", analytics_service_host, analytics_service_port)
 	resp, err := http.Get(address)
 	if err != nil {
-		log.Error().Err(err).Msg("error occured while fetching views from views service")                                 // this log will get stored internally
-		ctx.JSON(http.StatusInternalServerError, gin.H{"error": "user friendly error - without exposing internal logic"}) // you have the granullarity for choosing your own status code (instead of panicing)
+		log.Error().Err(err).Msg("error occured while fetching views from views service")
+		ctx.JSON(http.StatusInternalServerError, gin.H{"error": "Get views failed"})
 	}
 	defer resp.Body.Close()
 	val := &Docs{}
 	decoder := json.NewDecoder(resp.Body)
 	err = decoder.Decode(val)
 	if err != nil {
-		log.Error().Err(err).Msg("error occured while decoding response into Doc object") // this log will get stored internally - usually you also log additional data like resp.Body etc..
-		ctx.JSON(http.StatusUnprocessableEntity, gin.H{"error": "user friendly error - without exposing internal logic"})
+		log.Error().Err(err).Msg("error occured while decoding response into Doc object")
+		ctx.JSON(http.StatusUnprocessableEntity, gin.H{"error": "Get views failed"})
 	}
 	ctx.JSON(http.StatusOK, val)
 }
@@ -139,17 +139,17 @@ func main() {
 		new_post := BlogPost{Title: title, Author: author, Body: body}
 		payload, err := json.Marshal(new_post)
 		if err != nil {
-			log.Error().Err(err).Msg("error occured while decoding response into Doc object") // this log will get stored internally - usually you also log additional data like resp.Body etc..
-			ctx.JSON(http.StatusUnprocessableEntity, gin.H{"error": "user friendly error - without exposing internal logic"})
+			log.Error().Err(err).Msg("error occured while decoding response into Doc object")
+			ctx.JSON(http.StatusUnprocessableEntity, gin.H{"error": "Upload failed"})
 		}
 		err = json.Unmarshal(payload, &new_post)
 		if err != nil {
-			log.Error().Err(err).Msg("error occured while decoding response into Doc object") // this log will get stored internally - usually you also log additional data like resp.Body etc..
-			ctx.JSON(http.StatusUnprocessableEntity, gin.H{"error": "user friendly error - without exposing internal logic"})
+			log.Error().Err(err).Msg("error occured while decoding response into Doc object")
+			ctx.JSON(http.StatusUnprocessableEntity, gin.H{"error": "Upload failed"})
 		}
 		if err := rdb.RPush(ctx, "queue:new-post", payload).Err(); err != nil {
-			log.Error().Err(err).Msg("error occured while decoding response into Doc object") // this log will get stored internally - usually you also log additional data like resp.Body etc..
-			ctx.JSON(http.StatusUnprocessableEntity, gin.H{"error": "user friendly error - without exposing internal logic"})
+			log.Error().Err(err).Msg("error occured while decoding response into Doc object")
+			ctx.JSON(http.StatusUnprocessableEntity, gin.H{"error": "Upload failed"})
 		}
 
 		newPost(ctx, title, author, body)
@@ -158,5 +158,5 @@ func main() {
 	router.GET("/posts", getAllPosts)
 	router.GET("/views/:title", getPostViews)
 	router.GET("/views", getAllViews)
-	router.Run(":8081")
+	router.Run()
 }

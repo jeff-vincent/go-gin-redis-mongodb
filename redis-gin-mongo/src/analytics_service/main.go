@@ -31,7 +31,7 @@ func getAnalyticsDataByTitle(ctx *gin.Context, mongoClient *mongo.Client, title 
 	err := coll.FindOne(ctx, bson.D{{"title", title}}).Decode(&result)
 	if err != nil {
 		log.Error().Err(err).Msg("error occured while connecting to redis")
-		ctx.JSON(http.StatusInternalServerError, gin.H{"error": "user friendly error - without exposing internal logic"})
+		ctx.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to get analytics data"})
 	}
 	return result
 }
@@ -45,7 +45,7 @@ func getAllBlogViews(ctx *gin.Context, mongoClient *mongo.Client) []bson.M {
 	var results []bson.M
 	if err = cursor.All(ctx, &results); err != nil {
 		log.Error().Err(err).Msg("error occured while connecting to redis")
-		ctx.JSON(http.StatusInternalServerError, gin.H{"error": "user friendly error - without exposing internal logic"})
+		ctx.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to get analytics data"})
 	}
 	return results
 }
@@ -78,5 +78,5 @@ func main() {
 			"Data": result,
 		})
 	})
-	router.Run(":8082")
+	router.Run()
 }

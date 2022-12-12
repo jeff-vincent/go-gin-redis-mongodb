@@ -34,8 +34,8 @@ func getPost(ctx *gin.Context, mongoClient *mongo.Client, title string) (bson.D,
 	var result bson.D
 	err := coll.FindOne(ctx, bson.D{{"title", title}}).Decode(&result)
 	if err != nil {
-		log.Error().Err(err).Msg("error occured while fetching posts from posts mongo")                                   // this log will get stored internally
-		ctx.JSON(http.StatusInternalServerError, gin.H{"error": "user friendly error - without exposing internal logic"}) // you have the granullarity for choosing your own status code (instead of panicing)
+		log.Error().Err(err).Msg("error occured while fetching posts from posts mongo")
+		ctx.JSON(http.StatusInternalServerError, gin.H{"error": "Get post failed"})
 		return nil, err
 	}
 	Publish(ctx, title)
@@ -45,13 +45,13 @@ func getPost(ctx *gin.Context, mongoClient *mongo.Client, title string) (bson.D,
 func Publish(ctx *gin.Context, payload string) {
 	opt, err := redis.ParseURL(redis_uri)
 	if err != nil {
-		log.Error().Err(err).Msg("error occured while connecting to redis")                                               // this log will get stored internally
-		ctx.JSON(http.StatusInternalServerError, gin.H{"error": "user friendly error - without exposing internal logic"}) // you have the granullarity for choosing your own status code (instead of panicing)
+		log.Error().Err(err).Msg("error occured while connecting to redis")
+		ctx.JSON(http.StatusInternalServerError, gin.H{"error": "Analytics error"})
 	}
 	rdb := redis.NewClient(opt)
 	if err := rdb.RPush(ctx, "queue:blog-view", payload).Err(); err != nil {
-		log.Error().Err(err).Msg("error occured while publishing to redis")                                               // this log will get stored internally
-		ctx.JSON(http.StatusInternalServerError, gin.H{"error": "user friendly error - without exposing internal logic"}) // you have the granullarity for choosing your own status code (instead of panicing)
+		log.Error().Err(err).Msg("error occured while publishing to redis")
+		ctx.JSON(http.StatusInternalServerError, gin.H{"error": "Analytics error"})
 	}
 }
 

@@ -37,7 +37,7 @@ func insertDoc(mongoClient *mongo.Client, post BlogPost) (*mongo.InsertOneResult
 	result, err := coll.InsertOne(context.TODO(), post)
 
 	if err != nil {
-		log.Error().Err(err).Msg("error occured while connecting to redis")
+		log.Error().Err(err).Msg("error occured while inserting doc to mongo")
 		return nil, err
 	}
 	return result, err
