@@ -1,15 +1,15 @@
 {{template "header.html"}}
+
 <div style="background-color: #707bb2; margin: 15px; border-radius: 5px; padding: 15px; width: 300px">
   <b>Find a Blog Post</b>
-  <form action="/post">
-      <label for="title">Title</label><br>
-      <input type="text" id="title" name="title"><br>
-      <p><input type=submit value="Search">
-  </form>
+  <div>
+    <input type="text" id="post-title"><br>
+    <button id="get-post">Get Post</button>
+  </div>
 </div>
 <div style="background-color: #707bb2; margin: 15px; border-radius: 5px; padding: 15px; width: 300px">
   <b>Create a Blog Post</b>
-  <form action="/post" method="post">
+  <form action="/posts" method="post">
       <label for="title">Title</label><br>
       <input type="text" id="title" name="title" label="title"><br>
       <label for="author">Author</label><br>
@@ -22,11 +22,10 @@
 </div>
 <div style="background-color: #707bb2; margin: 15px; border-radius: 5px; padding: 15px; width: 300px">
   <b>Post Views by Title</b>
-  <form action="/views" method="get">
-      <label for="title">Title</label><br>
-      <input type="text" id="title" name="title" label="title"><br>
-      <p><input type=submit value="Get Views">
-  </form>
+  <div>
+      <input type="text" id="views-title" name="title" label="title"><br>
+      <button value="Get Views" id="get-views">Get Views</button>
+  </div>
 </div>
 <p>{{ .content }}</p>
 {{template "footer.html"}}

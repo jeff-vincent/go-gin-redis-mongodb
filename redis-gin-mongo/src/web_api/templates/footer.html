@@ -1,5 +1,15 @@
 {{define "footer.html"}}
-</div>
-</body>
-</html>
+<script>
+    postButton = document.getElementById('get-post')
+    viewsButton = document.getElementById("get-views")
+    postButton.addEventListener('click', getPost)
+    viewsButton.addEventListener('click', getViews)
+
+    function getPost() {
+      window.location.assign(window.location.origin + '/posts/' + document.getElementById('post-title').value)
+    }
+    function getViews() {
+      window.location.assign(window.location.origin + '/views/' + document.getElementById("views-title").value)
+    }
+</script>
 {{end}}
