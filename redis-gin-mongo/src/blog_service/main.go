@@ -47,11 +47,13 @@ func Publish(ctx *gin.Context, payload string) {
 	if err != nil {
 		log.Error().Err(err).Msg("error occured while connecting to redis")
 		ctx.JSON(http.StatusInternalServerError, gin.H{"error": "Analytics error"})
+		return
 	}
 	rdb := redis.NewClient(opt)
 	if err := rdb.RPush(ctx, "queue:blog-view", payload).Err(); err != nil {
 		log.Error().Err(err).Msg("error occured while publishing to redis")
 		ctx.JSON(http.StatusInternalServerError, gin.H{"error": "Analytics error"})
+		return
 	}
 }
 

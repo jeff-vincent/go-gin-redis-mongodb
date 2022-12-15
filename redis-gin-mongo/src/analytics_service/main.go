@@ -25,18 +25,19 @@ var (
 	mongo_uri  = fmt.Sprintf("mongodb://%s:%s", mongo_host, mongo_port)
 )
 
-func getAnalyticsDataByTitle(ctx *gin.Context, mongoClient *mongo.Client, title string) bson.D {
+func getAnalyticsDataByTitle(ctx *gin.Context, mongoClient *mongo.Client, title string) (bson.D, error) {
 	coll := mongoClient.Database(databaseName).Collection(collectionName)
 	var result bson.D
 	err := coll.FindOne(ctx, bson.D{{"title", title}}).Decode(&result)
 	if err != nil {
 		log.Error().Err(err).Msg("error occured while connecting to redis")
 		ctx.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to get analytics data"})
+		return nil, err
 	}
-	return result
+	return result, err
 }
 
-func getAllBlogViews(ctx *gin.Context, mongoClient *mongo.Client) []bson.M {
+func getAllBlogViews(ctx *gin.Context, mongoClient *mongo.Client) ([]bson.M, error) {
 	coll := mongoClient.Database(databaseName).Collection(collectionName)
 	cursor, err := coll.Find(context.TODO(), bson.D{})
 	if err != nil {
@@ -46,8 +47,9 @@ func getAllBlogViews(ctx *gin.Context, mongoClient *mongo.Client) []bson.M {
 	if err = cursor.All(ctx, &results); err != nil {
 		log.Error().Err(err).Msg("error occured while connecting to redis")
 		ctx.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to get analytics data"})
+		return nil, err
 	}
-	return results
+	return results, err
 }
 
 func main() {

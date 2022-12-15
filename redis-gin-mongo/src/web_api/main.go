@@ -43,6 +43,7 @@ func getPost(ctx *gin.Context) {
 	if err != nil {
 		log.Error().Err(err).Msg("error occured while fetching posts from posts service")
 		ctx.JSON(http.StatusInternalServerError, gin.H{"error": "Get posts failed"})
+		return
 	}
 	defer resp.Body.Close()
 	val := &Doc{}
@@ -51,6 +52,7 @@ func getPost(ctx *gin.Context) {
 	if err != nil {
 		log.Error().Err(err).Msg("error occured while decoding response into Doc object")
 		ctx.JSON(http.StatusUnprocessableEntity, gin.H{"error": "Get posts failed"})
+		return
 	}
 	ctx.JSON(http.StatusOK, val)
 }
@@ -61,6 +63,7 @@ func getAllPosts(ctx *gin.Context) {
 	if err != nil {
 		log.Error().Err(err).Msg("error occured while fetching posts from posts service")
 		ctx.JSON(http.StatusInternalServerError, gin.H{"error": "Get posts failed"})
+		return
 	}
 	defer resp.Body.Close()
 	val := &Docs{}
@@ -69,6 +72,7 @@ func getAllPosts(ctx *gin.Context) {
 	if err != nil {
 		log.Error().Err(err).Msg("error occured while decoding response into Doc object")
 		ctx.JSON(http.StatusUnprocessableEntity, gin.H{"error": "Get posts failed"})
+		return
 	}
 	ctx.JSON(http.StatusOK, val)
 }
@@ -92,6 +96,7 @@ func getPostViews(ctx *gin.Context) {
 	if err != nil {
 		log.Error().Err(err).Msg("error occured while fetching views from views service")
 		ctx.JSON(http.StatusInternalServerError, gin.H{"error": "Get views failed"})
+		return
 	}
 	defer resp.Body.Close()
 	val := &Doc{}
@@ -100,6 +105,7 @@ func getPostViews(ctx *gin.Context) {
 	if err != nil {
 		log.Error().Err(err).Msg("error occured while decoding response into Doc object")
 		ctx.JSON(http.StatusUnprocessableEntity, gin.H{"error": "Get views failed"})
+		return
 	}
 	ctx.JSON(http.StatusOK, val)
 }
@@ -110,6 +116,7 @@ func getAllViews(ctx *gin.Context) {
 	if err != nil {
 		log.Error().Err(err).Msg("error occured while fetching views from views service")
 		ctx.JSON(http.StatusInternalServerError, gin.H{"error": "Get views failed"})
+		return
 	}
 	defer resp.Body.Close()
 	val := &Docs{}
@@ -118,6 +125,7 @@ func getAllViews(ctx *gin.Context) {
 	if err != nil {
 		log.Error().Err(err).Msg("error occured while decoding response into Doc object")
 		ctx.JSON(http.StatusUnprocessableEntity, gin.H{"error": "Get views failed"})
+		return
 	}
 	ctx.JSON(http.StatusOK, val)
 }
@@ -141,11 +149,13 @@ func main() {
 		if err != nil {
 			log.Error().Err(err).Msg("error occured while decoding response into Doc object")
 			ctx.JSON(http.StatusUnprocessableEntity, gin.H{"error": "Upload failed"})
+			return
 		}
 		err = json.Unmarshal(payload, &new_post)
 		if err != nil {
 			log.Error().Err(err).Msg("error occured while decoding response into Doc object")
 			ctx.JSON(http.StatusUnprocessableEntity, gin.H{"error": "Upload failed"})
+			return
 		}
 		if err := rdb.RPush(ctx, "queue:new-post", payload).Err(); err != nil {
 			log.Error().Err(err).Msg("error occured while decoding response into Doc object")
