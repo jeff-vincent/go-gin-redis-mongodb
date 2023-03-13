@@ -15,7 +15,7 @@ jobs:
            chmod 700 get_helm.sh
            ./get_helm.sh
       - name: commit_blueprint
-        run: helm template ./redis-gin-mongo/k8s -f /redis-gin-mongo/k8s/velocity-values.yml | /home/runner/velocity/veloctl blueprint commit -f - --source "example"
+        run: helm template ./redis-gin-mongo/k8s -f ./redis-gin-mongo/k8s/velocity-values.yml | /home/runner/velocity/veloctl blueprint commit -f - --source "example"
     env:
       VELOCITY_TOKEN: ${{ secrets.VELOCITY_TOKEN }}
       
