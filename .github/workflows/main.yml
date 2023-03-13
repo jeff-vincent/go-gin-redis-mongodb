@@ -8,7 +8,9 @@ jobs:
     steps:
       - uses: actions/checkout@v3
       - name: install_veloctl
-        run: curl -fsSL https://releases.velocity.tech/veloctl/latest.sh | sh -s
+        run: |
+          curl -fsSL https://releases.velocity.tech/veloctl/latest.sh | sh -s
+          export PATH=/home/runner/velocity:$PATH
       - name: install_helm
         run: |
            curl -fsSL -o get_helm.sh https://raw.githubusercontent.com/helm/helm/main/scripts/get-helm-3
