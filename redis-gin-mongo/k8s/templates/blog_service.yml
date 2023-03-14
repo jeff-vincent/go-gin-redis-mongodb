@@ -22,6 +22,7 @@ spec:
       containers:
         - name: blog-service
           image: {{ .Values.blogService.containers.image | quote }}
+          imagePullPolicy: Always
           env:
             - name: MONGO1_HOST
               value: {{ .Values.blogService.envVars.MONGO1_HOST | quote  }}

@@ -68,14 +68,20 @@ func main() {
 
 	router.GET("/views/:title", func(ctx *gin.Context) {
 		title := ctx.Param("title")
-		result := getAnalyticsDataByTitle(ctx, mongoClient, title)
+		result, err := getAnalyticsDataByTitle(ctx, mongoClient, title)
+		if err != nil {
+			log.Error().Err(err).Msg("error occured")
+		}
 		ctx.JSON(http.StatusOK, gin.H{
 			"Data": result,
 		})
 	})
 
 	router.GET("/views", func(ctx *gin.Context) {
-		result := getAllBlogViews(ctx, mongoClient)
+		result, err := getAllBlogViews(ctx, mongoClient)
+		if err != nil {
+			log.Error().Err(err).Msg("error occured")
+		}
 		ctx.JSON(http.StatusOK, gin.H{
 			"Data": result,
 		})

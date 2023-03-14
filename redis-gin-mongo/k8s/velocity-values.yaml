@@ -1,17 +1,17 @@
 webAPI:
   annotations:
     velocityID: "web-api"
-    velocityDependsOn: "redis, analytics-ser, blog-service"
+    velocityDependsOn: redis, analytics, blog
 
   containers:
-    image: jdvincent/gin-redis-web-api:latest
+    image: jdvincent/gin-web-api:latest
   
   envVars:
     REDIS_HOST: "{velocity.v1:redis.exposures(port=redis).host}"
     REDIS_PORT: "{velocity.v1:redis.exposures(port=redis).port}"
-    ANALYTICS_SERVICE_HOST: analytics-ser
+    ANALYTICS_SERVICE_HOST: analytics
     ANALYTICS_SERVICE_PORT: "8080"
-    BLOG_SERVICE_HOST: blog-service
+    BLOG_SERVICE_HOST: blog
     BLOG_SERVICE_PORT: "8080"
 
   ingress:
@@ -22,10 +22,10 @@ webAPI:
 dbWorker:
   annotations:
     velocityID: "db-worker"
-    velocityDependsOn: "redis, mongo1"
+    velocityDependsOn: redis, mongo1
 
   containers:
-    image: jdvincent/gin-redis-db-worker:latest
+    image: jdvincent/gin-db-worker:latest
   
   envVars:
     REDIS_HOST: "{velocity.v1:redis.exposures(port=redis).host}"
@@ -36,11 +36,11 @@ dbWorker:
 
 blogService:
   annotations:
-    velocityID: "blog-service"
-    velocityDependsOn: "redis, mongo1"
+    velocityID: "blog"
+    velocityDependsOn: redis, mongo1
 
   containers:
-    image: jdvincent/gin-redis-blog-service:latest
+    image: jdvincent/gin-blog:latest
   
   envVars:
     REDIS_HOST: "{velocity.v1:redis.exposures(port=redis).host}"
@@ -52,10 +52,10 @@ blogService:
 analyticsWorker:
   annotations:
     velocityID: "analytics-worker"
-    velocityDependsOn: "redis, mongo2"
+    velocityDependsOn: redis, mongo2
 
   containers:
-    image: jdvincent/gin-redis-analytics-worker:latest
+    image: jdvincent/gin-analytics-worker:latest
   
   envVars:
     REDIS_HOST: "{velocity.v1:redis.exposures(port=redis).host}"
@@ -66,11 +66,11 @@ analyticsWorker:
 
 analyticsService:
   annotations:
-    velocityID: "analytics-ser"
+    velocityID: "analytics"
     velocityDependsOn: "mongo2"
 
   containers:
-    image: jdvincent/gin-redis-analytics-service:latest
+    image: jdvincent/gin-analytics:latest
   
   envVars:
     MONGO2_HOST: "{velocity.v1:mongo2.exposures(port=mongo2).host}"

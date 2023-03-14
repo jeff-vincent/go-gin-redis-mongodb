@@ -5,23 +5,23 @@ metadata:
   annotations:
     velocity.tech.v1/id: {{ .Values.analyticsService.annotations.velocityID | quote }}
     velocity.tech.v1/dependsOn: {{ .Values.analyticsService.annotations.velocityDependsOn | quote }}
-  name: analytics-ser
+  name: analytics
   labels:
-    app: analytics-ser
+    app: analytics
 spec:
   selector:
     matchLabels:
-      api: analytics-ser
+      api: analytics
   replicas: 1
   template:
     metadata:
       labels:
-        app: analytics-ser
-        api: analytics-ser
+        app: analytics
+        api: analytics
     spec:
       containers:
-        - name: analytics-ser
-          image: jdvincent/gin-redis-analytics-service:latest
+        - name: analytics
+          image: {{ .Values.analyticsService.containers.image | quote }}
           env:
             - name: MONGO2_HOST
               value: {{ .Values.analyticsService.envVars.MONGO2_HOST | quote  }}
