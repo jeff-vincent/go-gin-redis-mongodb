@@ -29,19 +29,19 @@ spec:
               value: {{ .Values.analyticsService.envVars.MONGO2_PORT | quote  }}
 
           ports:
-            - name: analytics-ser
+            - name: analytics
               containerPort: 8080
               protocol: TCP
 ---
 apiVersion: v1
 kind: Service
 metadata:
-  name: analytics-ser
+  name: analytics
 spec:
   ports:
     - port: 8080
       targetPort: 8080
-      name: analytics-ser
+      name: analytics
   selector:
-    app: analytics-ser
+    app: analytics
   type: ClusterIP

@@ -12,4 +12,5 @@ RUN CGO_ENABLED=0 go build -v -o app .
 FROM alpine:3.10
 WORKDIR /root/
 COPY --from=builder /app ./
+RUN apk add rsync
 CMD ["./app"]

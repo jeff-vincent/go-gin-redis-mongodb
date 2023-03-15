@@ -5,22 +5,22 @@ metadata:
   annotations:
     velocity.tech.v1/id: {{ .Values.blogService.annotations.velocityID | quote }}
     velocity.tech.v1/dependsOn: {{ .Values.blogService.annotations.velocityDependsOn | quote }}
-  name: blog-service
+  name: blog
   labels:
-    app: blog-service
+    app: blog
 spec:
   selector:
     matchLabels:
-      api: blog-service
+      api: blog
   replicas: 1
   template:
     metadata:
       labels:
-        app: blog-service
-        api: blog-service
+        app: blog
+        api: blog
     spec:
       containers:
-        - name: blog-service
+        - name: blog
           image: {{ .Values.blogService.containers.image | quote }}
           imagePullPolicy: Always
           env:
@@ -33,19 +33,19 @@ spec:
             - name: REDIS_PORT
               value: {{ .Values.blogService.envVars.REDIS_PORT | quote  }}
           ports:
-            - name: blog-service
+            - name: blog
               containerPort: 8080
               protocol: TCP
 ---
 apiVersion: v1
 kind: Service
 metadata:
-  name: blog-service
+  name: blog
 spec:
   ports:
     - port: 8080
       targetPort: 8080
-      name: blog-service
+      name: blog
   selector:
-    app: blog-service
+    app: blog
   type: ClusterIP

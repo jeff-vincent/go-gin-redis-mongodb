@@ -66,7 +66,7 @@ func main() {
 	defer mongoClient.Disconnect(ctx)
 	router := gin.Default()
 
-	router.GET("/views/:title", func(ctx *gin.Context) {
+	router.GET("/views/title", func(ctx *gin.Context) {
 		title := ctx.Param("title")
 		result, err := getAnalyticsDataByTitle(ctx, mongoClient, title)
 		if err != nil {
