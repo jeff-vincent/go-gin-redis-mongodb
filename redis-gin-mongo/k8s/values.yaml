@@ -1,17 +1,13 @@
 webAPI:
-  annotations:
-    velocityID: ""
-    velocityDependsOn: ""
-
   containers:
     image: jdvincent/gin-redis-web-api:latest
   
   envVars:
     REDIS_HOST: redis
     REDIS_PORT: "6379"
-    ANALYTICS_SERVICE_HOST: analytics-ser
+    ANALYTICS_SERVICE_HOST: analytics
     ANALYTICS_SERVICE_PORT: "8080"
-    BLOG_SERVICE_HOST: blog-service
+    BLOG_SERVICE_HOST: blog
     BLOG_SERVICE_PORT: "8080"
 
   ingress:
@@ -20,9 +16,6 @@ webAPI:
   
 
 dbWorker:
-  annotations:
-    velocityID: ""
-    velocityDependsOn: ""
 
   containers:
     image: jdvincent/gin-redis-db-worker:latest
@@ -35,9 +28,6 @@ dbWorker:
 
 
 blogService:
-  annotations:
-    velocityID: ""
-    velocityDependsOn: ""
 
   containers:
     image: jdvincent/gin-redis-blog-service:latest
@@ -50,9 +40,6 @@ blogService:
 
 
 analyticsWorker:
-  annotations:
-    velocityID: ""
-    velocityDependsOn: ""
 
   containers:
     image: jdvincent/gin-redis-analytics-worker:latest
@@ -65,9 +52,6 @@ analyticsWorker:
 
 
 analyticsService:
-  annotations:
-    velocityID: ""
-    velocityDependsOn: ""
 
   containers:
     image: jdvincent/gin-redis-analytics-service:latest
